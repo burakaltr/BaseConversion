@@ -1,0 +1,278 @@
+/*
+    Copyright 2010 Burak Alkan, all rights reserved.
+    Cleanup December 31 2010 by Audrius Meskauskas
+  
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JApplet;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+@SuppressWarnings("serial")
+public class Input2 extends JApplet implements ActionListener {
+
+	private int APPLET_WIDTH = 500, APPLET_HEIGHT = 100;
+
+	private JTextField base1, base2, number, fraction;
+	private JButton convert;
+	JLabel basex;
+	JLabel basey;
+	JLabel numbery;
+	JLabel fractiony;
+	private JTextField output;;
+
+	public void init() {
+
+		// The base layout of the applet itself: any number of the single element rows
+		setLayout(new GridLayout(0, 1, 5, 5));
+
+		basex = new JLabel("Base, from:");
+		basey = new JLabel("Base, to:");
+		numbery = new JLabel("Whole or Whole with Fraction:");
+
+		// Set some obvious value to convert 
+		base1 = new JTextField("10");
+		base2 = new JTextField("16");
+		number = new JTextField("255");
+		fraction = new JTextField("0");
+
+		convert = new JButton("Convert!");
+		output = new JTextField();
+		convert.addActionListener(this);
+		
+		// This will cause the conversion event to fire when the user
+		// presses ENTER while in the input field.
+		number.addActionListener(this); 
+		base1.addActionListener(this);
+		base2.addActionListener(this);
+
+		// 1 row, any number of columns.
+		JPanel row1 = new JPanel(new GridLayout(1, 0, 4, 4));
+		JPanel row2 = new JPanel(new GridLayout(1, 0, 4, 4));
+		JPanel row3 = new JPanel(new GridLayout(1, 0, 4, 4));
+
+		row1.add(basex);
+		row1.add(basey);
+
+		row2.add(base1);
+		row2.add(base2);
+		
+		row3.add(numbery);
+		row3.add(number);
+
+		// The third row uses different layout as we want the output field
+		// to take the max avail space
+		JPanel row4 = new JPanel(new BorderLayout(4, 4));
+
+		row4.add(new JLabel("Output:"), BorderLayout.WEST); // On the left
+		row4.add(output, BorderLayout.CENTER); // Biggest one in the centre
+		row4.add(convert, BorderLayout.EAST); // On the right
+		setBackground(Color.white);
+		setSize(APPLET_WIDTH, APPLET_HEIGHT);
+
+		add(row1);
+		add(row2);
+		add(row3);
+		add(row4);
+	}
+
+	public void actionPerformed(ActionEvent e) {
+		double SB = Double.parseDouble(base1.getText());
+		double DB = Double.parseDouble(base2.getText());
+
+		String SVw = (number.getText());
+		String SVf = (fraction.getText());
+		String SV = SVw + '.' + SVf;
+		SV = SV.toUpperCase();
+        if((DB==2)||(DB==3))SV=SV+"000000000";SV=SV+"0000000000000000";
+        
+		String SV2 = SV;
+		SV2=SV+"00000000000000000000000000000000000000000000000";
+		char CONVTD[] = new char[100];
+		char TEXT[] = new char[100];
+		double TOTCONVA = 0, TOTCONVB = 0;
+		char[] CONVTD2 = new char[100];
+		int POWDET = 0, T, PREC, NEXT, i, j, t = 0, K = 0;
+		int FRACT[] = new int[100];
+		char d;
+		int WHOLE[] = new int[100];
+		int INTEG[] = new int[100];
+		double P, LEFTA, PROD;
+		double[] CONVTDA = new double[100];
+
+		System.out.println("Enter SB: ");
+		System.out.println("Enter DB: ");
+		System.out.println("Enter SOURCE VARIABLE: ");
+		SV2 = SV;
+		for (i = 0; i < 100; i++)
+			TEXT[i] = '0';
+		;
+		for (i = 0; i < SV2.length(); i++) {
+
+			int intg = (int) (SV2.charAt(i));
+			if ((intg >= 97) && (intg <= 122)) {
+
+				d = SV2.charAt(i);
+
+				SV2.replace(SV.charAt(i), (char) (d - 32));
+			}
+		}
+
+		for (i = 0; i < SV2.length() - 1; i++) {
+			if ((0 <= SB) && (9 >= SB)) {
+				if ((int) SV2.charAt(i) >= SB + 48)
+					System.out.println("DIGITAL VIOLATION");
+			}
+
+			if (10 <= SB) {
+
+				if ((int) (SV2.charAt(i)) >= SB + 55)
+					System.out.println("DIGITAL VIOLATION");
+			}
+		}
+
+		PREC = 40;
+		K = 0;
+		TOTCONVA = 0;
+		TOTCONVB = 0;
+		POWDET = SV2.indexOf('.');
+
+		for (i = 0; i < POWDET; i++) {
+			d = (char) (SV2.charAt(i));
+			int intg = (int) d;
+
+			if (intg >= 48 && (intg <= 57))
+				WHOLE[i] = intg - 48;
+			if (intg >= 65 && (intg <= 90))
+				WHOLE[i] = (int) SV2.charAt(i) - 55;
+			TOTCONVA = (double) (TOTCONVA + WHOLE[i]
+					* Math.pow(SB * 1., POWDET - 1 - i));
+			if (SV2.charAt(i) == '.')
+				break;
+		}
+
+		for (i = POWDET + 1; i < SV2.length(); i++) {
+
+			K = K + 1;
+			int intg1 = (int) (SV2.charAt(i));
+
+			if (intg1 >= 48 && (intg1 <= 57))
+				FRACT[i] = intg1 - 48;
+
+			if (intg1 >= 65 && intg1 <= 90)
+				FRACT[i] = intg1 - 55;
+
+			P = Math.pow(SB, -K * 1.);
+			TOTCONVB = TOTCONVB + FRACT[i] * P;
+		}
+		LEFTA = TOTCONVA;
+		for (i = 0; i < SV2.length(); i++) {
+			if (0 <= LEFTA && LEFTA <= DB - 1) {
+				t = i;
+				break;
+			}
+			if (Math.pow(DB, i) <= LEFTA && LEFTA <= Math.pow(DB, i + 1) - 1) {
+				t = i;
+				break;
+			}
+		}
+		for (j = t; j >= 0; j--) {
+			CONVTDA[j] = (LEFTA % DB);
+			System.out.println(CONVTDA[j]);
+			LEFTA = ((LEFTA - (LEFTA % DB)));
+			LEFTA = (LEFTA / DB);//System.out.println((int)LEFTA);
+			if (CONVTDA[j] >= 0 && (CONVTDA[j]) <= 9)
+				CONVTD[j] = (char) (CONVTDA[j] + 48);
+			if (CONVTDA[j] >= 10 && (CONVTDA[j]) <= 35)
+				CONVTD[j] = (char) (CONVTDA[j] + 55);
+		}
+		for (j = 0; j < t + 1; j++)
+			TEXT[j] = (char) CONVTD[j];
+
+		NEXT = t + 1;
+		TEXT[NEXT] = '.';
+		NEXT = NEXT + 1;
+		T = 0;
+		for (j = 0; j < PREC; j++) {
+			PROD = TOTCONVB * DB;
+			INTEG[j] = (int) PROD;
+			T = T + 1;
+			PROD = TOTCONVB * DB;
+			if (INTEG[j] >= 0 && INTEG[j] <= 9)
+				CONVTD2[j] = (char) (INTEG[j] + 48);
+
+			if (INTEG[j] >= 10 && INTEG[j] <= 35)
+				CONVTD2[j] = (char) (INTEG[j] + 55);
+			if (TOTCONVB - INTEG[j] == 0)
+				break;
+			TOTCONVB = DB * TOTCONVB - INTEG[j];
+		}
+		//int z=0;
+		for (j = 0; j < T - 1; j++)
+			TEXT[NEXT + j] = CONVTD2[j];
+for(int k =50; k>POWDET-1; k--){
+	
+	//z=z+1;
+	if(TEXT[k]=='0'){
+	TEXT[k]=' ';
+		//System.out.println(k);
+
+if(TEXT[k-1]!='0')
+{
+	
+	if(TEXT[k+1]!='0')
+	break;
+}	
+}
+	
+	
+	
+
+
+
+
+
+}
+		String ccc = "";
+		for (j = 0; j < 50; j++) {
+			//System.out.print(TEXT[j]);
+			
+
+			if(TEXT[j]=='.'){
+				
+		if(TEXT[j+1]==' ')		TEXT[j]=' ';
+				
+			}
+			
+			ccc = ccc + TEXT[j];
+
+			if (j == 39) {
+				output.setText((ccc));
+			}
+		}
+		
+		// Make sure start and not the end of the output is visible.
+		output.setSelectionStart(0);
+		output.setSelectionEnd(0);
+	}
+}
